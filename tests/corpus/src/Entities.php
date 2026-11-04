@@ -6,6 +6,7 @@ namespace Corpus\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -22,6 +23,26 @@ class User
 
     #[ORM\Column(type: 'string')]
     public int $invalidColumn = 0;
+
+    public const FEATURE_ENABLED = true;
+
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => self::FEATURE_ENABLED])]
+    public bool $featureToggle = true;
+
+    #[ORM\Column(type: 'boolean')]
+    public bool $plainBoolean = false;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    public ?\DateTimeImmutable $constantDate = null;
+
+    #[ORM\Column(type: Types::JSON)]
+    public array $settings = [];
+
+    #[ORM\Column]
+    public bool $inferredBoolean = false;
+
+    #[ORM\Column(nullable: true)]
+    public ?int $inferredInteger = null;
 
     #[ORM\Column(type: 'string')]
     private string $name = '';

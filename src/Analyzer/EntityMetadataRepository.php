@@ -31,6 +31,8 @@ final class EntityMetadataRepository
 
     private ?Codebase $loadedCodebase = null;
 
+    private AttributeValueResolver $values;
+
     /** @var array<string, EntityMetadata> */
     private array $entities = [];
 
@@ -45,6 +47,7 @@ final class EntityMetadataRepository
             $config->entityNamespaces,
             static fn (string $namespace): bool => $namespace !== '',
         ));
+        $this->values = new AttributeValueResolver();
     }
 
     /**
@@ -73,6 +76,7 @@ final class EntityMetadataRepository
         }
 
         $this->loadedCodebase = $codebase;
+        $this->values = new AttributeValueResolver($codebase);
         $this->entities = [];
         $this->repositoryEntities = [];
 
@@ -274,19 +278,25 @@ final class EntityMetadataRepository
             || $this->findAttributeEndingWith($attributes, 'Id') !== null;
         $nullable = match (true) {
             $identifier => false,
-            $column !== null => AttributeReader::boolArgument($column, 0, 'nullable') ?? false,
-            $toOne !== null && !$toMany => AttributeReader::boolArgument($joinColumn, 0, 'nullable') ?? true,
+            $column !== null => AttributeReader::boolArgument($column, AttributeValueResolver::NAMED_ONLY, 'nullable') ?? false,
+            $toOne !== null && !$toMany => AttributeReader::boolArgument($joinColumn, AttributeValueResolver::NAMED_ONLY, 'nullable') ?? true,
             default => false,
         };
         $nativeType = $property->declaredType?->type ?? $property->type?->type;
+        $reflectedType = $property->declaredType !== null && !$property->declaredType->fromDocblock
+            ? $property->declaredType->type
+            : null;
         $version = AttributeReader::has($attributes, self::ORM_MAPPING . 'Version');
         $generated = AttributeReader::has($attributes, self::ORM_MAPPING . 'GeneratedValue');
-        $columnType = $column === null
-            ? null
-            : (AttributeReader::stringArgument($column, 0, 'type')
-                ?? AttributeReader::stringArgument($column, 0, 'name')
-                ?? 'string');
-        $enumType = AttributeReader::stringArgument($column, 0, 'enumType');
+        $enumType = $this->values->string($column, AttributeValueResolver::NAMED_ONLY, 'enumType');
+        $columnType = null;
+        if ($column !== null) {
+            $columnType = $this->values->string($column, 1, 'type');
+            if ($columnType === null) {
+                [$columnType, $inferredEnumType] = ColumnTypeInferrer::infer($reflectedType, $enumType, $this->loadedCodebase);
+                $enumType ??= $inferredEnumType;
+            }
+        }
         $frameworkManaged = $identifier || $version || $this->hasManagedAttribute($attributes);
 
         return new DoctrinePropertyMetadata(

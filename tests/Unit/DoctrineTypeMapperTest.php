@@ -45,6 +45,8 @@ final class DoctrineTypeMapperTest extends TestCase
         yield 'decimal' => ['decimal', 'string'];
         yield 'immutable datetime' => ['datetime_immutable', 'DateTimeImmutable'];
         yield 'simple array' => ['simple_array', 'list<string>'];
-        yield 'json' => ['json', 'array<mixed, mixed>'];
+        yield 'json' => ['json', 'array<int|string, mixed>'];
+        yield 'small float' => ['smallfloat', 'float'];
+        yield 'date interval' => ['dateinterval', 'DateInterval'];
     }
 }

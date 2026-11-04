@@ -2,28 +2,28 @@ variant = "strict"
 
 [[entries."src/Entities.php".issues]]
 code = "gimmickmedia/doctrine/entity-column-type"
-start_line = 22
-end_line = 22
+start_line = 23
+end_line = 23
 
 [[entries."src/Entities.php".issues]]
 code = "gimmickmedia/doctrine/entity-constructor-not-final"
-start_line = 86
-end_line = 86
+start_line = 107
+end_line = 107
 
 [[entries."src/Entities.php".issues]]
 code = "gimmickmedia/doctrine/entity-not-final"
-start_line = 116
-end_line = 116
+start_line = 137
+end_line = 137
 
 [[entries."src/Entities.php".issues]]
 code = "gimmickmedia/doctrine/entity-relation-type"
-start_line = 36
-end_line = 36
+start_line = 57
+end_line = 57
 
 [[entries."src/Entities.php".issues]]
 code = "gimmickmedia/doctrine/entity-unknown-column-type"
-start_line = 83
-end_line = 83
+start_line = 104
+end_line = 104
 
 [[entries."src/QueryUsage.php".issues]]
 code = "gimmickmedia/doctrine/dql-validation"
