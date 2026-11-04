@@ -41,9 +41,11 @@ final class EntityRelationRule
                 'entity-relation-type',
                 Issue::at(
                     sprintf(
-                        'Doctrine %s relation to %s is incompatible with property type %s::$%s (%s).',
+                        'Doctrine %s relation to %s (%s %s) is incompatible with property type %s::$%s (%s).',
                         $property->toMany ? 'to-many' : 'to-one',
                         $property->targetEntity,
+                        $property->toMany ? 'expects' : 'database can contain',
+                        $expectedType,
                         $entity->className,
                         $property->name,
                         $property->nativeType,

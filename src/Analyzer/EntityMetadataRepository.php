@@ -270,14 +270,15 @@ final class EntityMetadataRepository
             ?? AttributeReader::stringArgument($toOne, 0, 'targetDocument')
             ?? AttributeReader::stringArgument($embedded, 0, 'class')
             ?? AttributeReader::classFromType($property->declaredType?->type ?? $property->type?->type);
-        $nullable = $column !== null
-            ? (AttributeReader::boolArgument($column, 0, 'nullable') ?? false)
-            : ($toOne !== null && !$toMany
-                ? (AttributeReader::boolArgument($joinColumn, 0, 'nullable') ?? true)
-                : false);
-        $nativeType = $property->declaredType?->type ?? $property->type?->type;
         $identifier = AttributeReader::has($attributes, self::ORM_MAPPING . 'Id')
             || $this->findAttributeEndingWith($attributes, 'Id') !== null;
+        $nullable = match (true) {
+            $identifier => false,
+            $column !== null => AttributeReader::boolArgument($column, 0, 'nullable') ?? false,
+            $toOne !== null && !$toMany => AttributeReader::boolArgument($joinColumn, 0, 'nullable') ?? true,
+            default => false,
+        };
+        $nativeType = $property->declaredType?->type ?? $property->type?->type;
         $version = AttributeReader::has($attributes, self::ORM_MAPPING . 'Version');
         $generated = AttributeReader::has($attributes, self::ORM_MAPPING . 'GeneratedValue');
         $columnType = $column === null

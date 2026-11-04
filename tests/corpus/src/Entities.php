@@ -90,6 +90,30 @@ class Comment
 }
 
 #[ORM\Entity]
+class UserGroup
+{
+    public function __construct(
+        #[ORM\Id]
+        #[ORM\ManyToOne(targetEntity: User::class)]
+        private readonly User $user,
+        #[ORM\Id]
+        #[ORM\ManyToOne(targetEntity: Group::class)]
+        private readonly Group $group,
+    ) {
+    }
+
+    public function getUser(): User
+    {
+        return $this->user;
+    }
+
+    public function getGroup(): Group
+    {
+        return $this->group;
+    }
+}
+
+#[ORM\Entity]
 final class FinalEntity
 {
     #[ORM\Id]

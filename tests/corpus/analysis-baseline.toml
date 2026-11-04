@@ -12,8 +12,8 @@ end_line = 86
 
 [[entries."src/Entities.php".issues]]
 code = "gimmickmedia/doctrine/entity-not-final"
-start_line = 92
-end_line = 92
+start_line = 116
+end_line = 116
 
 [[entries."src/Entities.php".issues]]
 code = "gimmickmedia/doctrine/entity-relation-type"
