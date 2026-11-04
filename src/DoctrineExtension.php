@@ -11,7 +11,8 @@ final class DoctrineExtension
 {
     /**
      * @param list<string> $entityNamespaces
-     * @param array<string, \Mago\Sdk\Analyzer\Type> $customTypes DBAL type names to inferred PHP types
+     * @param array<string, \Mago\Sdk\Analyzer\Type|string> $customTypes DBAL type names to inferred PHP types or Doctrine type classes
+     * @param array<string, class-string> $types DBAL type names to Doctrine type classes
      * @param array<string, \Mago\Sdk\Analyzer\Type> $customFunctions DQL function names to inferred return types
      */
     public static function create(
@@ -28,6 +29,7 @@ final class DoctrineExtension
         bool $allCollectionsSelectable = true,
         ?string $objectManagerLoader = null,
         bool $literalString = false,
+        array $types = [],
     ): Extension {
         $config = new DoctrineConfig(
             entityNamespaces: $entityNamespaces,
@@ -43,6 +45,7 @@ final class DoctrineExtension
             allCollectionsSelectable: $allCollectionsSelectable,
             objectManagerLoader: $objectManagerLoader,
             literalString: $literalString,
+            types: $types,
         );
 
         return new Extension(

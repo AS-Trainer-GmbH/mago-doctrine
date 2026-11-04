@@ -300,7 +300,7 @@ final class QueryResultTypeResolver
 
         $type = $property->columnType === null
             ? $property->nativeType
-            : DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType, $this->config->customTypes);
+            : ($property->columnPhpType ?? DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType, $this->config->customTypes));
 
         if ($type === null) {
             return Type::mixed();

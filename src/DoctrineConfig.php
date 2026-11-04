@@ -10,7 +10,8 @@ final class DoctrineConfig
 {
     /**
      * @param list<string> $entityNamespaces
-     * @param array<string, Type> $customTypes DBAL type names to inferred PHP types
+     * @param array<string, Type|string> $customTypes DBAL type names to inferred PHP types or Doctrine type classes
+     * @param array<string, class-string> $types DBAL type names to Doctrine type classes
      * @param array<string, Type> $customFunctions DQL function names to inferred return types
      */
     public function __construct(
@@ -27,5 +28,6 @@ final class DoctrineConfig
         public readonly bool $allCollectionsSelectable = true,
         public readonly ?string $objectManagerLoader = null,
         public readonly bool $literalString = false,
+        public readonly array $types = [],
     ) {}
 }

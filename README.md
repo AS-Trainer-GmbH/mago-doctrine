@@ -24,7 +24,7 @@
 | Throw types of `EntityManager::flush()` | `ORMException`, `UniqueConstraintViolationException` |
 | Dead code integration (generated ids, versions, read-only entities, Gedmo) | mapped properties count as read; ids, generated values, versions, read-only entities and Gedmo-managed properties count as written/initialised |
 | `Collection::first()` / `last()` narrowing after `isEmpty()` is `false` | `T\|false` becomes `T` (needs the `stubs` include) |
-| Custom types (`reportUnknownTypes`) | `customTypes` option, `entity-unknown-column-type` |
+| Custom types (`reportUnknownTypes`) | `types` mirrors Doctrine's `dbal.types` class registrations; `customTypes` can directly map type names to PHP types; unknown types use `entity-unknown-column-type` |
 | Custom DQL functions | `customFunctions` option (name => return type) |
 | `reportDynamicQueryBuilders` | `dynamic-query-builder` |
 | `literalString` | `literal-string` for DQL/SQL arguments of `createQuery()` and `Doctrine\DBAL\Connection` query methods |
@@ -70,6 +70,10 @@ require dirname(__DIR__) . '/vendor/autoload.php';
         allowNullablePropertyForRequiredField: false,
         ormRepositoryClass: 'Doctrine\\ORM\\EntityRepository',
         odmRepositoryClass: 'Doctrine\\ODM\\MongoDB\\Repository\\DocumentRepository',
+        types: [
+            'datetime_immutable' => 'Carbon\\Doctrine\\DateTimeImmutableType',
+            'datetime' => 'Carbon\\Doctrine\\DateTimeType',
+        ],
         customTypes: ['uuid' => Mago\Sdk\Analyzer\Type::namedObject('Symfony\\Component\\Uid\\Uuid')],
         customFunctions: ['FLOOR' => Mago\Sdk\Analyzer\Type::int()],
         reportUnknownTypes: false,
@@ -93,7 +97,7 @@ patches = ["vendor/gimmickmedia/mago-doctrine/patches/collections"]
 command = ["php", ".mago/extensions.php"]
 ```
 
-`entityNamespaces` accepts namespace prefixes; an empty list searches all classes for Doctrine mapping attributes. The object manager loader follows the phpstan-doctrine convention (see its README for Symfony examples); it is loaded once per worker and only used for DQL validation.
+`entityNamespaces` accepts namespace prefixes; an empty list searches all classes for Doctrine mapping attributes. `types` follows Doctrine's `dbal.types` mapping and resolves a custom type from its `convertToPHPValue()` return type; built-in descriptors cover Symfony UID, Ramsey UUID and Carbon date types. `customTypes` remains available for direct DBAL-name-to-PHP-type mappings. The object manager loader follows the phpstan-doctrine convention (see its README for Symfony examples); it is loaded once per worker and only used for DQL validation.
 
 ## Development
 

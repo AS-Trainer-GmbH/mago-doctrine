@@ -9,6 +9,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Types\UlidType;
+use Symfony\Bridge\Doctrine\Types\UuidType;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User
@@ -33,7 +35,7 @@ class User
     public bool $plainBoolean = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    public ?\DateTimeImmutable $constantDate = null;
+    public ?\Carbon\CarbonImmutable $constantDate = null;
 
     #[ORM\Column(type: Types::JSON)]
     public array $settings = [];
@@ -140,4 +142,26 @@ final class FinalEntity
     #[ORM\Id]
     #[ORM\Column(type: 'integer')]
     private int $id;
+}
+
+#[ORM\Entity]
+class SpecialDoctrineTypes
+{
+    #[ORM\Id]
+    #[ORM\Column(type: UuidType::NAME)]
+    public \Symfony\Component\Uid\Uuid $uuid;
+
+    #[ORM\Id]
+    #[ORM\Column(type: UlidType::NAME)]
+    public \Symfony\Component\Uid\Ulid $ulid;
+
+    #[ORM\Column(type: 'datetime_immutable')]
+    public \Carbon\CarbonImmutable $createdAt;
+
+    #[ORM\Column(type: 'custom_value')]
+    public \Corpus\Entity\CustomValue $customValue;
+}
+
+class CustomValue
+{
 }

@@ -6,6 +6,7 @@ namespace Gimmickmedia\Mago\Doctrine\Analyzer\Rules;
 
 use Gimmickmedia\Mago\Doctrine\Analyzer\DoctrineTypeMapper;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
+use Gimmickmedia\Mago\Doctrine\Analyzer\TypeDescriptorRegistry;
 use Gimmickmedia\Mago\Doctrine\DoctrineConfig;
 use Mago\Sdk\Analyzer\BeforeAnalysisContext;
 use Mago\Sdk\Analyzer\Type;
@@ -17,12 +18,19 @@ final class EntityColumnRule
 {
     public static function check(EntityMetadata $entity, BeforeAnalysisContext $context, DoctrineConfig $config): void
     {
+        $typeDescriptors = new TypeDescriptorRegistry($config->customTypes, $config->types);
         foreach ($entity->properties as $property) {
             if (!$property->mapped || $property->columnType === null || $property->location === null) {
                 continue;
             }
 
-            $mappedType = DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType, $config->customTypes);
+            $mappedType = $property->columnPhpType
+                ?? $typeDescriptors->toPhpType(
+                    $property->columnType,
+                    $property->enumType,
+                    $property->columnTypeClass,
+                    $context->codebase,
+                );
             if ($mappedType === null) {
                 if ($config->reportUnknownTypes) {
                     $context->report(

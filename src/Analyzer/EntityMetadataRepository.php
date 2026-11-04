@@ -33,6 +33,8 @@ final class EntityMetadataRepository
 
     private AttributeValueResolver $values;
 
+    private TypeDescriptorRegistry $typeDescriptors;
+
     /** @var array<string, EntityMetadata> */
     private array $entities = [];
 
@@ -48,6 +50,7 @@ final class EntityMetadataRepository
             static fn (string $namespace): bool => $namespace !== '',
         ));
         $this->values = new AttributeValueResolver();
+        $this->typeDescriptors = new TypeDescriptorRegistry($config->customTypes, $config->types);
     }
 
     /**
@@ -77,6 +80,7 @@ final class EntityMetadataRepository
 
         $this->loadedCodebase = $codebase;
         $this->values = new AttributeValueResolver($codebase);
+        $this->typeDescriptors = new TypeDescriptorRegistry($this->config->customTypes, $this->config->types);
         $this->entities = [];
         $this->repositoryEntities = [];
 
@@ -290,13 +294,18 @@ final class EntityMetadataRepository
         $generated = AttributeReader::has($attributes, self::ORM_MAPPING . 'GeneratedValue');
         $enumType = $this->values->string($column, AttributeValueResolver::NAMED_ONLY, 'enumType');
         $columnType = null;
+        $columnTypeClass = null;
         if ($column !== null) {
             $columnType = $this->values->string($column, 1, 'type');
+            $columnTypeClass = $this->values->classConstantClass($column, 1, 'type');
             if ($columnType === null) {
                 [$columnType, $inferredEnumType] = ColumnTypeInferrer::infer($reflectedType, $enumType, $this->loadedCodebase);
                 $enumType ??= $inferredEnumType;
             }
         }
+        $columnPhpType = $columnType === null
+            ? null
+            : $this->typeDescriptors->toPhpType($columnType, $enumType, $columnTypeClass, $this->loadedCodebase);
         $frameworkManaged = $identifier || $version || $this->hasManagedAttribute($attributes);
 
         return new DoctrinePropertyMetadata(
@@ -313,6 +322,8 @@ final class EntityMetadataRepository
             $frameworkManaged,
             $nativeType,
             $property->location ?? $column?->location ?? $toOne?->location ?? $embedded?->location,
+            $columnTypeClass,
+            $columnPhpType,
         );
     }
 

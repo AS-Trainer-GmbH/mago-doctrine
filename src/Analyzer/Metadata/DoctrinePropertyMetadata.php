@@ -23,5 +23,7 @@ final class DoctrinePropertyMetadata
         public readonly bool $frameworkManaged,
         public readonly ?Type $nativeType,
         public readonly ?SourceLocation $location,
+        public readonly ?string $columnTypeClass = null,
+        public readonly ?Type $columnPhpType = null,
     ) {}
 }

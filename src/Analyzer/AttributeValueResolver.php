@@ -13,14 +13,23 @@ use Mago\Sdk\Analyzer\Type\NamedObjectType;
 use Mago\Sdk\SourceLocation;
 
 use function count;
+use function explode;
 use function file_get_contents;
 use function is_file;
 use function ltrim;
+use function max;
+use function min;
 use function preg_match;
-use function str_ends_with;
-use function str_starts_with;
+use function preg_match_all;
+use function preg_quote;
+use function preg_split;
 use function strcasecmp;
+use function str_contains;
+use function stripcslashes;
+use function str_starts_with;
 use function strtolower;
+use function strrpos;
+use function strlen;
 use function substr;
 use function trim;
 
@@ -58,7 +67,20 @@ final class AttributeValueResolver
             ?? $this->classConstant($argument);
     }
 
+    public function classConstantClass(?AttributeMetadata $attribute, int $position, string ...$names): ?string
+    {
+        $argument = $attribute?->getArgument($position, ...$names);
+
+        return $argument === null ? null : $this->classConstantReference($argument)['class'];
+    }
+
     public function classConstant(AttributeArgumentMetadata $argument): ?string
+    {
+        return $this->classConstantReference($argument)['value'];
+    }
+
+    /** @return array{value: ?string, class: ?string} */
+    private function classConstantReference(AttributeArgumentMetadata $argument): array
     {
         $source = $this->sourceText($argument->valueLocation);
         if (
@@ -66,33 +88,31 @@ final class AttributeValueResolver
             || preg_match('/^(\\\\?[A-Za-z_][A-Za-z0-9_\\\\]*)\s*::\s*([A-Za-z_][A-Za-z0-9_]*)$/', trim($source), $matches) !== 1
             || strcasecmp($matches[2], 'class') === 0
         ) {
-            return null;
+            return ['value' => null, 'class' => null];
         }
 
         $constant = $matches[2];
         $class = self::className($argument->valueType)
-            ?? (str_starts_with($matches[1], '\\') ? ltrim($matches[1], '\\') : null);
+            ?? $this->resolveClassName($matches[1], $argument->valueLocation?->file);
 
         if ($class !== null && $this->codebase !== null) {
             $metadata = $this->codebase->getClassConstant($class, $constant);
             $value = $metadata?->inferredType?->getLiteralString()
                 ?? $metadata?->type?->type->getLiteralString()
                 ?? $metadata?->declaredType?->type->getLiteralString();
-            if ($value !== null) {
-                return $value;
+            $value ??= $metadata === null ? null : $this->constantSourceValue($metadata->location, $constant);
+            if ($value === null && self::isDbalTypesClass($class)) {
+                $value = self::dbalTypeConstant($constant);
             }
+
+            return ['value' => $value, 'class' => $class];
         }
 
-        foreach (self::DBAL_TYPES_CLASSES as $typesClass) {
-            if (
-                ($class !== null && strcasecmp($class, $typesClass) === 0)
-                || ($class === null && str_ends_with('\\' . $typesClass, '\\' . ltrim($matches[1], '\\')))
-            ) {
-                return self::dbalTypeConstant($constant);
-            }
+        if ($class !== null && self::isDbalTypesClass($class)) {
+            return ['value' => self::dbalTypeConstant($constant), 'class' => $class];
         }
 
-        return null;
+        return ['value' => null, 'class' => $class];
     }
 
     /**
@@ -140,5 +160,87 @@ final class AttributeValueResolver
         }
 
         return substr($contents, $location->span->start, $location->span->length());
+    }
+
+    private function constantSourceValue(SourceLocation $location, string $constant): ?string
+    {
+        $contents = $this->sourceFile($location->file);
+        if ($contents === null) {
+            return null;
+        }
+
+        $start = max(0, $location->span->start - 256);
+        $window = substr($contents, $start, min(1024, strlen($contents) - $start));
+        $quotedConstant = preg_quote($constant, '/');
+        if (preg_match('/\bconst\s+' . $quotedConstant . '\s*=\s*([\'\"])(.*?)\1/s', $window, $matches) !== 1) {
+            return null;
+        }
+
+        return stripcslashes($matches[2]);
+    }
+
+    private function resolveClassName(string $name, ?string $file): string
+    {
+        if (str_starts_with($name, '\\')) {
+            return ltrim($name, '\\');
+        }
+
+        $contents = $this->sourceFile($file);
+        if ($contents === null) {
+            return $name;
+        }
+
+        if (str_starts_with(strtolower($name), 'namespace\\')) {
+            preg_match('/^namespace\s+([^;{]+)[;{]/m', $contents, $namespace);
+
+            return isset($namespace[1]) ? trim($namespace[1]) . '\\' . substr($name, 10) : substr($name, 10);
+        }
+
+        $parts = explode('\\', $name, 2);
+        $alias = $parts[0];
+        if (preg_match_all('/^\s*use\s+(?!function\b|const\b)([^;]+);/mi', $contents, $imports)) {
+            foreach ($imports[1] as $import) {
+                if (str_contains($import, '{')) {
+                    continue;
+                }
+
+                $segments = preg_split('/\s+as\s+/i', trim($import));
+                $importedName = ltrim($segments[0], '\\');
+                $importAlias = $segments[1] ?? substr($importedName, (strrpos($importedName, '\\') ?: -1) + 1);
+                if (strcasecmp($alias, trim($importAlias)) === 0) {
+                    return $importedName . (isset($parts[1]) ? '\\' . $parts[1] : '');
+                }
+            }
+        }
+
+        preg_match('/^namespace\s+([^;{]+)[;{]/m', $contents, $namespace);
+
+        return isset($namespace[1]) ? trim($namespace[1]) . '\\' . $name : $name;
+    }
+
+    private function sourceFile(?string $file): ?string
+    {
+        if ($file === null) {
+            return null;
+        }
+
+        if (!isset($this->sources[$file])) {
+            $this->sources[$file] = is_file($file) ? file_get_contents($file) : false;
+        }
+
+        $source = $this->sources[$file];
+
+        return $source === false ? null : $source;
+    }
+
+    private static function isDbalTypesClass(string $class): bool
+    {
+        foreach (self::DBAL_TYPES_CLASSES as $typesClass) {
+            if (strcasecmp($class, $typesClass) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

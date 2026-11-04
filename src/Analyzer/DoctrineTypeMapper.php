@@ -9,7 +9,7 @@ use Mago\Sdk\Analyzer\Type;
 final class DoctrineTypeMapper
 {
     /**
-     * @param array<string, Type> $customTypes
+     * @param array<string, Type|string> $customTypes
      */
     public static function toPhpType(string $dbalType, ?string $enumType = null, array $customTypes = []): ?Type
     {
@@ -17,7 +17,12 @@ final class DoctrineTypeMapper
             return Type::namedObject($enumType);
         }
 
-        return $customTypes[$dbalType] ?? match (strtolower($dbalType)) {
+        $customType = $customTypes[$dbalType] ?? null;
+        if ($customType instanceof Type) {
+            return $customType;
+        }
+
+        return match (strtolower($dbalType)) {
             'ascii_string', 'guid', 'string', 'text', 'uuid', 'decimal' => Type::string(),
             'bigint' => Type::union(Type::int(), Type::string()),
             'boolean' => Type::bool(),

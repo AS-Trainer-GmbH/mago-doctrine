@@ -87,7 +87,8 @@ final class MagicRepositoryMethodsProvider implements MethodReturnTypeProvider, 
 
         $valueType = $property->nativeType;
         if ($valueType === null && $property->columnType !== null) {
-            $valueType = DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType, $this->config->customTypes);
+            $valueType = $property->columnPhpType
+                ?? DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType, $this->config->customTypes);
         }
         $valueType = $valueType === null
             ? Type::mixed()
