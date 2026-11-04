@@ -1,0 +1,13 @@
+version = "1.59"
+php-version = "8.3"
+
+[source]
+paths = ["src"]
+includes = ["../../../vendor"]
+
+[extension-hosts.doctrine]
+command = ["php", "worker.php"]
+workers = 1
+[analyzer]
+baseline = "analysis-baseline.toml"
+baseline-variant = "strict"

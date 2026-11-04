@@ -1,0 +1,11 @@
+variant = "strict"
+
+[[entries."src/Entities.php".issues]]
+code = "astrainer/doctrine/entity-column-type"
+start_line = 20
+end_line = 20
+
+[[entries."src/Entities.php".issues]]
+code = "astrainer/doctrine/entity-not-final"
+start_line = 30
+end_line = 30
