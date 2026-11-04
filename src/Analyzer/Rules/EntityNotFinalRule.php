@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer\Rules;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer\Rules;
 
-use Astrainer\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
+use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
 use Mago\Sdk\Analyzer\BeforeAnalysisContext;
 use Mago\Sdk\Reporting\Issue;
 use Mago\Sdk\Reporting\Level;

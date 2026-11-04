@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer\Providers;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer\Providers;
 
-use Astrainer\Mago\Doctrine\Analyzer\EntityMetadataRepository;
+use Gimmickmedia\Mago\Doctrine\Analyzer\EntityMetadataRepository;
 use Mago\Sdk\Analyzer\PropertyInitializationProvider;
 use Mago\Sdk\Analyzer\PropertyInitializationProviderContext;
 use Mago\Sdk\Analyzer\PropertyTarget;

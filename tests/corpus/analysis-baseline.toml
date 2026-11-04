@@ -1,11 +1,81 @@
 variant = "strict"
 
 [[entries."src/Entities.php".issues]]
-code = "astrainer/doctrine/entity-column-type"
-start_line = 20
-end_line = 20
+code = "gimmickmedia/doctrine/entity-column-type"
+start_line = 22
+end_line = 22
 
 [[entries."src/Entities.php".issues]]
-code = "astrainer/doctrine/entity-not-final"
-start_line = 30
-end_line = 30
+code = "gimmickmedia/doctrine/entity-constructor-not-final"
+start_line = 86
+end_line = 86
+
+[[entries."src/Entities.php".issues]]
+code = "gimmickmedia/doctrine/entity-not-final"
+start_line = 92
+end_line = 92
+
+[[entries."src/Entities.php".issues]]
+code = "gimmickmedia/doctrine/entity-relation-type"
+start_line = 36
+end_line = 36
+
+[[entries."src/Entities.php".issues]]
+code = "gimmickmedia/doctrine/entity-unknown-column-type"
+start_line = 83
+end_line = 83
+
+[[entries."src/QueryUsage.php".issues]]
+code = "gimmickmedia/doctrine/dql-validation"
+start_line = 113
+end_line = 113
+
+[[entries."src/QueryUsage.php".issues]]
+code = "gimmickmedia/doctrine/dql-validation"
+start_line = 118
+end_line = 118
+
+[[entries."src/QueryUsage.php".issues]]
+code = "gimmickmedia/doctrine/dql-validation"
+start_line = 123
+end_line = 127
+
+[[entries."src/QueryUsage.php".issues]]
+code = "gimmickmedia/doctrine/dynamic-query-builder"
+start_line = 146
+end_line = 149
+
+[[entries."src/QueryUsage.php".issues]]
+code = "gimmickmedia/doctrine/literal-string"
+start_line = 155
+end_line = 155
+
+[[entries."src/QueryUsage.php".issues]]
+code = "gimmickmedia/doctrine/literal-string"
+start_line = 160
+end_line = 160
+
+[[entries."src/QueryUsage.php".issues]]
+code = "invalid-return-statement"
+start_line = 134
+end_line = 134
+
+[[entries."src/QueryUsage.php".issues]]
+code = "invalid-return-statement"
+start_line = 140
+end_line = 140
+
+[[entries."src/RepositoryUsage.php".issues]]
+code = "gimmickmedia/doctrine/proxy-class-name"
+start_line = 78
+end_line = 78
+
+[[entries."src/RepositoryUsage.php".issues]]
+code = "gimmickmedia/doctrine/repository-unknown-field"
+start_line = 48
+end_line = 48
+
+[[entries."src/RepositoryUsage.php".issues]]
+code = "non-existent-class-like"
+start_line = 78
+end_line = 78

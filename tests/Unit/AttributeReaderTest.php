@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Tests\Unit;
+namespace Gimmickmedia\Mago\Doctrine\Tests\Unit;
 
-use Astrainer\Mago\Doctrine\Analyzer\AttributeReader;
+use Gimmickmedia\Mago\Doctrine\Analyzer\AttributeReader;
 use Mago\Sdk\Analyzer\Metadata\AttributeArgumentMetadata;
 use Mago\Sdk\Analyzer\Metadata\AttributeMetadata;
 use Mago\Sdk\Analyzer\Type;

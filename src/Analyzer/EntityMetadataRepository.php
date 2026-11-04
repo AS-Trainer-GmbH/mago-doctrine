@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer;
 
-use Astrainer\Mago\Doctrine\Analyzer\Metadata\DoctrinePropertyMetadata;
-use Astrainer\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
+use Gimmickmedia\Mago\Doctrine\DoctrineConfig;
+use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\DoctrinePropertyMetadata;
+use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
 use Mago\Sdk\Analyzer\Codebase;
 use Mago\Sdk\Analyzer\Metadata\MemberIdentifier;
 use Mago\Sdk\Analyzer\Metadata\MetadataFlags;
@@ -23,6 +24,7 @@ use function str_ends_with;
 final class EntityMetadataRepository
 {
     private const ORM_MAPPING = 'Doctrine\\ORM\\Mapping\\';
+    private const ODM_MAPPING = 'Doctrine\\ODM\\MongoDB\\Mapping\\';
 
     /** @var list<string> */
     private readonly array $entityNamespaces;
@@ -36,14 +38,32 @@ final class EntityMetadataRepository
     private array $repositoryEntities = [];
 
     /**
-     * @param list<string> $entityNamespaces
      */
-    public function __construct(array $entityNamespaces = [])
+    public function __construct(private readonly DoctrineConfig $config)
     {
         $this->entityNamespaces = array_values(array_filter(
-            $entityNamespaces,
+            $config->entityNamespaces,
             static fn (string $namespace): bool => $namespace !== '',
         ));
+    }
+
+    /**
+     * Creates a repository from already known metadata (e.g. for tests or pre-computed mappings).
+     *
+     * @param list<EntityMetadata> $entities
+     */
+    public static function fromEntities(DoctrineConfig $config, array $entities): self
+    {
+        $repository = new self($config);
+        foreach ($entities as $entity) {
+            $repository->entities[$repository->normalizeName($entity->className)] = $entity;
+            $defaultRepository = $entity->odm ? $config->odmRepositoryClass : $config->ormRepositoryClass;
+            if (strcasecmp($entity->repositoryClass, $defaultRepository) !== 0) {
+                $repository->repositoryEntities[$repository->normalizeName($entity->repositoryClass)] = $entity->className;
+            }
+        }
+
+        return $repository;
     }
 
     public function load(Codebase $codebase): void
@@ -71,8 +91,11 @@ final class EntityMetadataRepository
 
         $propertyRequests = [];
         $classProperties = [];
+        $mappedClasses = [];
         foreach ($classes as $className => $class) {
-            if (!AttributeReader::has($class->attributes, self::ORM_MAPPING . 'Entity')) {
+            $ormEntity = AttributeReader::find($class->attributes, self::ORM_MAPPING . 'Entity');
+            $odmDocument = $this->findAttributeEndingWith($class->attributes, 'Document');
+            if ($ormEntity === null && $odmDocument === null) {
                 continue;
             }
 
@@ -84,6 +107,7 @@ final class EntityMetadataRepository
             }
 
             $classProperties[$className] = $propertyNames;
+            $mappedClasses[$className] = ['orm' => $ormEntity !== null, 'attribute' => $ormEntity ?? $odmDocument];
         }
 
         $properties = [];
@@ -98,9 +122,10 @@ final class EntityMetadataRepository
 
         foreach ($classProperties as $className => $propertyNames) {
             $class = $classes[$className];
-            $entityAttribute = AttributeReader::find($class->attributes, self::ORM_MAPPING . 'Entity');
+            $isOrm = $mappedClasses[$className]['orm'];
+            $entityAttribute = $mappedClasses[$className]['attribute'];
             $customRepository = AttributeReader::stringArgument($entityAttribute, 0, 'repositoryClass');
-            $repositoryClass = $customRepository ?? 'Doctrine\\ORM\\EntityRepository';
+            $repositoryClass = $customRepository ?? ($isOrm ? $this->config->ormRepositoryClass : $this->config->odmRepositoryClass);
             $mappedProperties = [];
             foreach ($propertyNames as $propertyName) {
                 $property = $properties[$className][$propertyName] ?? null;
@@ -115,6 +140,8 @@ final class EntityMetadataRepository
                 $class->originalName,
                 $repositoryClass,
                 $mappedProperties,
+                !$isOrm,
+                AttributeReader::boolArgument($entityAttribute, 0, 'readOnly') ?? false,
                 $class->flags->contains(MetadataFlags::FINAL),
                 $class->location,
                 $class->nameLocation,
@@ -139,21 +166,26 @@ final class EntityMetadataRepository
 
     public function getEntityForRepository(string $repositoryClass, ?Type $receiverType = null): ?EntityMetadata
     {
-        $entityName = $this->repositoryEntities[$this->normalizeName($repositoryClass)] ?? null;
-        if ($entityName === null && $receiverType !== null) {
-            foreach ($receiverType->atomicTypes as $atomicType) {
-                if (!$atomicType instanceof NamedObjectType || $atomicType->parameters === null) {
-                    continue;
-                }
+        foreach ($receiverType?->atomicTypes ?? [] as $atomicType) {
+            if (!$atomicType instanceof NamedObjectType) {
+                continue;
+            }
 
-                foreach ($atomicType->parameters as $parameter) {
-                    $entityName = AttributeReader::classFromType($parameter);
-                    if ($entityName !== null && $this->getEntity($entityName) !== null) {
-                        break 2;
-                    }
+            $mapped = $this->repositoryEntities[$this->normalizeName($atomicType->name)] ?? null;
+            if ($mapped !== null) {
+                return $this->getEntity($mapped);
+            }
+
+            foreach ($atomicType->parameters ?? [] as $parameter) {
+                $entityName = AttributeReader::classFromType($parameter);
+                $entity = $entityName === null ? null : $this->getEntity($entityName);
+                if ($entity !== null) {
+                    return $entity;
                 }
             }
         }
+
+        $entityName = $this->repositoryEntities[$this->normalizeName($repositoryClass)] ?? null;
 
         return $entityName === null ? null : $this->getEntity($entityName);
     }
@@ -162,7 +194,7 @@ final class EntityMetadataRepository
     {
         $entity = $this->getEntity($className);
 
-        return $entity?->getProperty($propertyName)?->frameworkManaged ?? false;
+        return $entity?->readOnly || ($entity?->getProperty($propertyName)?->frameworkManaged ?? false);
     }
 
     public function getMagicMethodProperty(
@@ -215,23 +247,27 @@ final class EntityMetadataRepository
     private function createPropertyMetadata(string $name, PropertyMetadata $property): DoctrinePropertyMetadata
     {
         $attributes = $property->attributes;
-        $column = AttributeReader::find($attributes, self::ORM_MAPPING . 'Column');
+        $column = AttributeReader::find($attributes, self::ORM_MAPPING . 'Column')
+            ?? $this->findAttributeEndingWith($attributes, 'Field');
         $toOne = null;
         $toMany = false;
-        foreach (['ManyToOne', 'OneToOne', 'OneToMany', 'ManyToMany'] as $relation) {
-            $attribute = AttributeReader::find($attributes, self::ORM_MAPPING . $relation);
+        foreach (['ManyToOne', 'OneToOne', 'OneToMany', 'ManyToMany', 'ReferenceOne', 'ReferenceMany', 'EmbedOne', 'EmbedMany'] as $relation) {
+            $attribute = AttributeReader::find($attributes, self::ORM_MAPPING . $relation)
+                ?? $this->findAttributeEndingWith($attributes, $relation);
             if ($attribute === null) {
                 continue;
             }
 
             $toOne = $attribute;
-            $toMany = $relation === 'OneToMany' || $relation === 'ManyToMany';
+            $toMany = in_array($relation, ['OneToMany', 'ManyToMany', 'ReferenceMany', 'EmbedMany'], true);
             break;
         }
 
         $embedded = AttributeReader::find($attributes, self::ORM_MAPPING . 'Embedded');
-        $joinColumn = AttributeReader::find($attributes, self::ORM_MAPPING . 'JoinColumn');
+        $joinColumn = AttributeReader::find($attributes, self::ORM_MAPPING . 'JoinColumn')
+            ?? $this->findAttributeEndingWith($attributes, 'ReferenceOne');
         $targetEntity = AttributeReader::stringArgument($toOne, 0, 'targetEntity')
+            ?? AttributeReader::stringArgument($toOne, 0, 'targetDocument')
             ?? AttributeReader::stringArgument($embedded, 0, 'class')
             ?? AttributeReader::classFromType($property->declaredType?->type ?? $property->type?->type);
         $nullable = $column !== null
@@ -240,10 +276,15 @@ final class EntityMetadataRepository
                 ? (AttributeReader::boolArgument($joinColumn, 0, 'nullable') ?? true)
                 : false);
         $nativeType = $property->declaredType?->type ?? $property->type?->type;
-        $identifier = AttributeReader::has($attributes, self::ORM_MAPPING . 'Id');
+        $identifier = AttributeReader::has($attributes, self::ORM_MAPPING . 'Id')
+            || $this->findAttributeEndingWith($attributes, 'Id') !== null;
         $version = AttributeReader::has($attributes, self::ORM_MAPPING . 'Version');
         $generated = AttributeReader::has($attributes, self::ORM_MAPPING . 'GeneratedValue');
-        $columnType = $column === null ? null : (AttributeReader::stringArgument($column, 0, 'type') ?? 'string');
+        $columnType = $column === null
+            ? null
+            : (AttributeReader::stringArgument($column, 0, 'type')
+                ?? AttributeReader::stringArgument($column, 0, 'name')
+                ?? 'string');
         $enumType = AttributeReader::stringArgument($column, 0, 'enumType');
         $frameworkManaged = $identifier || $version || $this->hasManagedAttribute($attributes);
 
@@ -278,5 +319,21 @@ final class EntityMetadataRepository
         }
 
         return false;
+    }
+
+    /** @param list<\Mago\Sdk\Analyzer\Metadata\AttributeMetadata> $attributes */
+    private function findAttributeEndingWith(array $attributes, string $name): ?\Mago\Sdk\Analyzer\Metadata\AttributeMetadata
+    {
+        foreach ($attributes as $attribute) {
+            $attributeName = ltrim($attribute->name, '\\');
+            if (
+                str_ends_with($attributeName, '\\' . $name)
+                && (str_starts_with($attributeName, self::ODM_MAPPING) || str_contains($attributeName, '\\Annotations\\'))
+            ) {
+                return $attribute;
+            }
+        }
+
+        return null;
     }
 }

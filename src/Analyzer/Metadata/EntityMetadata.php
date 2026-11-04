@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer\Metadata;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer\Metadata;
 
 use Mago\Sdk\SourceLocation;
 
@@ -18,6 +18,8 @@ final class EntityMetadata
         public readonly string $className,
         public readonly string $repositoryClass,
         public readonly array $properties,
+        public readonly bool $odm,
+        public readonly bool $readOnly,
         public readonly bool $final,
         public readonly ?SourceLocation $location,
         public readonly ?SourceLocation $nameLocation,

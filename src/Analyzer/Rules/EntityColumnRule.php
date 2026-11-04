@@ -2,47 +2,92 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer\Rules;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer\Rules;
 
-use Astrainer\Mago\Doctrine\Analyzer\DoctrineTypeMapper;
-use Astrainer\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
+use Gimmickmedia\Mago\Doctrine\Analyzer\DoctrineTypeMapper;
+use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
+use Gimmickmedia\Mago\Doctrine\DoctrineConfig;
 use Mago\Sdk\Analyzer\BeforeAnalysisContext;
+use Mago\Sdk\Analyzer\Type;
 use Mago\Sdk\Reporting\Issue;
 use Mago\Sdk\Reporting\Level;
+use Mago\Sdk\SourceLocation;
 
 final class EntityColumnRule
 {
-    public static function check(EntityMetadata $entity, BeforeAnalysisContext $context): void
+    public static function check(EntityMetadata $entity, BeforeAnalysisContext $context, DoctrineConfig $config): void
     {
         foreach ($entity->properties as $property) {
-            if (!$property->mapped || $property->columnType === null || $property->nativeType === null || $property->location === null) {
+            if (!$property->mapped || $property->columnType === null || $property->location === null) {
                 continue;
             }
 
-            $mappedType = DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType);
+            $mappedType = DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType, $config->customTypes);
             if ($mappedType === null) {
+                if ($config->reportUnknownTypes) {
+                    $context->report(
+                        Level::Error,
+                        'entity-unknown-column-type',
+                        Issue::at(
+                            sprintf(
+                                'Doctrine column type %s of %s::$%s has no known type descriptor.',
+                                $property->columnType,
+                                $entity->className,
+                                $property->name,
+                            ),
+                            $property->location,
+                        ),
+                    );
+                }
+
+                continue;
+            }
+
+            if ($property->nativeType === null) {
                 continue;
             }
 
             $expectedType = DoctrineTypeMapper::nullable($mappedType, $property->nullable);
-            if ($context->types->isContainedBy($expectedType, $property->nativeType)) {
+            if (!$context->types->isContainedBy($expectedType, $property->nativeType)) {
+                self::report($context, $entity, $property->name, $property->columnType, (string) $property->nativeType, $property->location, 'is incompatible with');
+
                 continue;
             }
 
-            $context->report(
-                Level::Error,
-                'entity-column-type',
-                Issue::at(
-                    sprintf(
-                        'Doctrine column type %s is incompatible with property type %s::$%s (%s).',
-                        $property->columnType,
-                        $entity->className,
-                        $property->name,
-                        $property->nativeType,
-                    ),
-                    $property->location,
-                ),
-            );
+            if (
+                !$property->nullable
+                && !$property->identifier
+                && !$config->allowNullablePropertyForRequiredField
+                && $context->types->isContainedBy(Type::null(), $property->nativeType)
+            ) {
+                self::report($context, $entity, $property->name, $property->columnType, (string) $property->nativeType, $property->location, 'is not nullable but is mapped to nullable');
+            }
         }
+    }
+
+    private static function report(
+        BeforeAnalysisContext $context,
+        EntityMetadata $entity,
+        string $property,
+        string $columnType,
+        string $nativeType,
+        SourceLocation $location,
+        string $relation,
+    ): void {
+        $context->report(
+            Level::Error,
+            'entity-column-type',
+            Issue::at(
+                sprintf(
+                    'Doctrine column type %s %s property type %s::$%s (%s).',
+                    $columnType,
+                    $relation,
+                    $entity->className,
+                    $property,
+                    $nativeType,
+                ),
+                $location,
+            ),
+        );
     }
 }

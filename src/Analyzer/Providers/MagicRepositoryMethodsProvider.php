@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer\Providers;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer\Providers;
 
-use Astrainer\Mago\Doctrine\Analyzer\DoctrineTypeMapper;
-use Astrainer\Mago\Doctrine\Analyzer\EntityMetadataRepository;
+use Gimmickmedia\Mago\Doctrine\Analyzer\DoctrineTypeMapper;
+use Gimmickmedia\Mago\Doctrine\Analyzer\EntityMetadataRepository;
+use Gimmickmedia\Mago\Doctrine\DoctrineConfig;
 use Mago\Sdk\Analyzer\CallableSignatureProvider;
 use Mago\Sdk\Analyzer\CallableSignatureProviderContext;
 use Mago\Sdk\Analyzer\EffectiveCallableSignature;
@@ -17,16 +18,28 @@ use Mago\Sdk\Analyzer\Type\CallableParameter;
 
 final class MagicRepositoryMethodsProvider implements MethodReturnTypeProvider, CallableSignatureProvider
 {
-    public function __construct(private readonly EntityMetadataRepository $metadata) {}
+    public function __construct(
+        private readonly EntityMetadataRepository $metadata,
+        private readonly DoctrineConfig $config,
+    ) {}
 
     /** @return non-empty-list<MethodTarget> */
     public function getTargets(): array
     {
-        return [
-            MethodTarget::exact('Doctrine\\ORM\\EntityRepository', 'findBy*'),
-            MethodTarget::exact('Doctrine\\ORM\\EntityRepository', 'findOneBy*'),
-            MethodTarget::exact('Doctrine\\ORM\\EntityRepository', 'countBy*'),
-        ];
+        $classes = array_unique([
+            'Doctrine\\ORM\\EntityRepository',
+            'Doctrine\\ODM\\MongoDB\\Repository\\DocumentRepository',
+            $this->config->ormRepositoryClass,
+            $this->config->odmRepositoryClass,
+        ]);
+        $targets = [];
+        foreach ($classes as $class) {
+            foreach (['findBy*', 'findOneBy*', 'countBy*'] as $method) {
+                $targets[] = MethodTarget::exact($class, $method);
+            }
+        }
+
+        return $targets;
     }
 
     public function getReturnType(ReturnTypeProviderContext $context): ?Type
@@ -74,7 +87,7 @@ final class MagicRepositoryMethodsProvider implements MethodReturnTypeProvider, 
 
         $valueType = $property->nativeType;
         if ($valueType === null && $property->columnType !== null) {
-            $valueType = DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType);
+            $valueType = DoctrineTypeMapper::toPhpType($property->columnType, $property->enumType, $this->config->customTypes);
         }
         $valueType = $valueType === null
             ? Type::mixed()

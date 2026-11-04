@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer;
 
 use Mago\Sdk\Analyzer\Metadata\AttributeMetadata;
 use Mago\Sdk\Analyzer\Type;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer\Rules;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer\Rules;
 
-use Astrainer\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
+use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
 use Mago\Sdk\Analyzer\BeforeAnalysisContext;
 use Mago\Sdk\Analyzer\Type;
 use Mago\Sdk\Reporting\Issue;
@@ -17,16 +17,21 @@ final class EntityRelationRule
         foreach ($entity->properties as $property) {
             if (
                 !$property->mapped
-                || $property->toMany
                 || $property->targetEntity === null
+                || $property->columnType !== null
                 || $property->nativeType === null
                 || $property->location === null
             ) {
                 continue;
             }
 
-            $relationType = Type::namedObject($property->targetEntity);
-            $expectedType = $property->nullable ? Type::union($relationType, Type::null()) : $relationType;
+            if ($property->toMany) {
+                $expectedType = Type::namedObject('Doctrine\\Common\\Collections\\Collection');
+            } else {
+                $relationType = Type::namedObject($property->targetEntity);
+                $expectedType = $property->nullable ? Type::union($relationType, Type::null()) : $relationType;
+            }
+
             if ($context->types->isContainedBy($expectedType, $property->nativeType)) {
                 continue;
             }
@@ -36,7 +41,8 @@ final class EntityRelationRule
                 'entity-relation-type',
                 Issue::at(
                     sprintf(
-                        'Doctrine relation to %s is incompatible with property type %s::$%s (%s).',
+                        'Doctrine %s relation to %s is incompatible with property type %s::$%s (%s).',
+                        $property->toMany ? 'to-many' : 'to-one',
                         $property->targetEntity,
                         $entity->className,
                         $property->name,

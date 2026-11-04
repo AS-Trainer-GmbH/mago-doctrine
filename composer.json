@@ -1,5 +1,5 @@
 {
-    "name": "astrainer/mago-doctrine",
+    "name": "gimmickmedia/mago-doctrine",
     "description": "Doctrine ORM analyzer extension for Mago",
     "type": "library",
     "version": "1.0.0",
@@ -11,12 +11,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Astrainer\\Mago\\Doctrine\\": "src/"
+            "Gimmickmedia\\Mago\\Doctrine\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Astrainer\\Mago\\Doctrine\\Tests\\": "tests/"
+            "Gimmickmedia\\Mago\\Doctrine\\Tests\\": "tests/"
         }
     }
 }

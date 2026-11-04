@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Tests\Unit;
+namespace Gimmickmedia\Mago\Doctrine\Tests\Unit;
 
-use Astrainer\Mago\Doctrine\Analyzer\DoctrineTypeMapper;
+use Gimmickmedia\Mago\Doctrine\Analyzer\DoctrineTypeMapper;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

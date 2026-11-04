@@ -3,7 +3,8 @@ php-version = "8.3"
 
 [source]
 paths = ["src"]
-includes = ["../../../vendor"]
+includes = ["../../../vendor", "../../stubs"]
+patches = ["../../patches/collections"]
 
 [extension-hosts.doctrine]
 command = ["php", "worker.php"]

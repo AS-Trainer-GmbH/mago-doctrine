@@ -2,19 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Astrainer\Mago\Doctrine\Analyzer;
+namespace Gimmickmedia\Mago\Doctrine\Analyzer;
 
 use Mago\Sdk\Analyzer\Type;
 
 final class DoctrineTypeMapper
 {
-    public static function toPhpType(string $dbalType, ?string $enumType = null): ?Type
+    /**
+     * @param array<string, Type> $customTypes
+     */
+    public static function toPhpType(string $dbalType, ?string $enumType = null, array $customTypes = []): ?Type
     {
         if ($enumType !== null) {
             return Type::namedObject($enumType);
         }
 
-        return match (strtolower($dbalType)) {
+        return $customTypes[$dbalType] ?? match (strtolower($dbalType)) {
             'ascii_string', 'guid', 'string', 'text', 'uuid', 'decimal' => Type::string(),
             'bigint' => Type::union(Type::int(), Type::string()),
             'boolean' => Type::bool(),
