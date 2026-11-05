@@ -13,6 +13,7 @@ final class DoctrineConfig
      * @param array<string, Type|string> $customTypes DBAL type names to inferred PHP types or Doctrine type classes
      * @param array<string, class-string> $types DBAL type names to Doctrine type classes
      * @param array<string, Type> $customFunctions DQL function names to inferred return types
+     * @param ?list<string> $symfonyConfigPaths Symfony Doctrine YAML config paths; null uses config/packages/doctrine.yaml
      */
     public function __construct(
         public readonly array $entityNamespaces = [],
@@ -29,5 +30,6 @@ final class DoctrineConfig
         public readonly ?string $objectManagerLoader = null,
         public readonly bool $literalString = false,
         public readonly array $types = [],
+        public readonly ?array $symfonyConfigPaths = null,
     ) {}
 }

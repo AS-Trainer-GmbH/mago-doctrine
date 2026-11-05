@@ -12,9 +12,4 @@ require dirname(__DIR__, 3) . '/vendor/autoload.php';
     reportUnknownTypes: true,
     reportDynamicQueryBuilders: true,
     literalString: true,
-    types: [
-        'datetime_immutable' => 'Carbon\\Doctrine\\DateTimeImmutableType',
-        'datetime' => 'Carbon\\Doctrine\\DateTimeType',
-        'custom_value' => 'Corpus\\Doctrine\\CustomValueType',
-    ],
 )))->run();

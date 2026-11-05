@@ -27,43 +27,43 @@ end_line = 106
 
 [[entries."src/QueryUsage.php".issues]]
 code = "gimmickmedia/doctrine/dql-validation"
-start_line = 113
-end_line = 113
+start_line = 135
+end_line = 135
 
 [[entries."src/QueryUsage.php".issues]]
 code = "gimmickmedia/doctrine/dql-validation"
-start_line = 118
-end_line = 118
+start_line = 140
+end_line = 140
 
 [[entries."src/QueryUsage.php".issues]]
 code = "gimmickmedia/doctrine/dql-validation"
-start_line = 123
-end_line = 127
-
-[[entries."src/QueryUsage.php".issues]]
-code = "gimmickmedia/doctrine/dynamic-query-builder"
-start_line = 146
+start_line = 145
 end_line = 149
 
 [[entries."src/QueryUsage.php".issues]]
-code = "gimmickmedia/doctrine/literal-string"
-start_line = 155
-end_line = 155
+code = "gimmickmedia/doctrine/dynamic-query-builder"
+start_line = 168
+end_line = 171
 
 [[entries."src/QueryUsage.php".issues]]
 code = "gimmickmedia/doctrine/literal-string"
-start_line = 160
-end_line = 160
+start_line = 177
+end_line = 177
+
+[[entries."src/QueryUsage.php".issues]]
+code = "gimmickmedia/doctrine/literal-string"
+start_line = 182
+end_line = 182
 
 [[entries."src/QueryUsage.php".issues]]
 code = "invalid-return-statement"
-start_line = 134
-end_line = 134
+start_line = 156
+end_line = 156
 
 [[entries."src/QueryUsage.php".issues]]
 code = "invalid-return-statement"
-start_line = 140
-end_line = 140
+start_line = 162
+end_line = 162
 
 [[entries."src/RepositoryUsage.php".issues]]
 code = "gimmickmedia/doctrine/proxy-class-name"

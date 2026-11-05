@@ -37,6 +37,26 @@ final class TypeDescriptorRegistryTest extends TestCase
             'Ramsey\\Uuid\\Doctrine\\UuidType',
             'Ramsey\\Uuid\\UuidInterface',
         ];
+        yield 'Carbon mutable date' => [
+            'datetime',
+            'Carbon\\Doctrine\\DateTimeType',
+            'Carbon\\Carbon',
+        ];
+        yield 'Carbon immutable date' => [
+            'datetime_immutable',
+            'Carbon\\Doctrine\\DateTimeImmutableType',
+            'Carbon\\CarbonImmutable',
+        ];
+        yield 'Carbon type' => [
+            'carbon',
+            'Carbon\\Doctrine\\CarbonType',
+            'Carbon\\Carbon',
+        ];
+        yield 'Carbon immutable type' => [
+            'carbon_immutable',
+            'Carbon\\Doctrine\\CarbonImmutableType',
+            'Carbon\\CarbonImmutable',
+        ];
     }
 
     public function testResolvesConfiguredCarbonTypeClass(): void

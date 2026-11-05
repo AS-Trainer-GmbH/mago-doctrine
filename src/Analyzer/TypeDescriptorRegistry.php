@@ -31,6 +31,8 @@ final class TypeDescriptorRegistry
         'Ramsey\\Uuid\\Doctrine\\UuidType' => 'Ramsey\\Uuid\\UuidInterface',
         'Ramsey\\Uuid\\Doctrine\\UuidBinaryType' => 'Ramsey\\Uuid\\UuidInterface',
         'Ramsey\\Uuid\\Doctrine\\UuidBinaryOrderedTimeType' => 'Ramsey\\Uuid\\UuidInterface',
+        'Carbon\\Doctrine\\CarbonType' => 'Carbon\\Carbon',
+        'Carbon\\Doctrine\\CarbonImmutableType' => 'Carbon\\CarbonImmutable',
         'Carbon\\Doctrine\\DateTimeType' => 'Carbon\\Carbon',
         'Carbon\\Doctrine\\DateTimeImmutableType' => 'Carbon\\CarbonImmutable',
     ];
@@ -82,6 +84,7 @@ final class TypeDescriptorRegistry
 
     private function classType(string $class, ?Codebase $codebase): ?Type
     {
+        $class = ltrim($class, '\\');
         $type = $this->classDescriptor($class, $codebase, []);
         if ($type !== null) {
             return $type;

@@ -56,7 +56,10 @@ final class EntityColumnRule
             }
 
             $expectedType = DoctrineTypeMapper::nullable($mappedType, $property->nullable);
-            if (!$context->types->isContainedBy($expectedType, $property->nativeType)) {
+            if (
+                (string) $expectedType !== (string) $property->nativeType
+                && !$context->types->isContainedBy($expectedType, $property->nativeType)
+            ) {
                 self::report($context, $entity, $property->name, $property->columnType, (string) $property->nativeType, $property->location, 'is incompatible with');
 
                 continue;

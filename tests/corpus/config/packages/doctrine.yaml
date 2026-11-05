@@ -1,0 +1,6 @@
+doctrine:
+    dbal:
+        types:
+            datetime_immutable: '\Carbon\Doctrine\DateTimeImmutableType'
+            custom_value:
+                class: 'Corpus\Doctrine\CustomValueType'

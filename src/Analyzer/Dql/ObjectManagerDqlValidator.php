@@ -5,20 +5,21 @@ declare(strict_types=1);
 namespace Gimmickmedia\Mago\Doctrine\Analyzer\Dql;
 
 use Gimmickmedia\Mago\Doctrine\DoctrineConfig;
-use Throwable;
+use Gimmickmedia\Mago\Doctrine\Analyzer\ObjectManagerLoader;
 
 final class ObjectManagerDqlValidator
 {
-    private bool $loaded = false;
+    private readonly ObjectManagerLoader $objectManagerLoader;
 
-    private ?object $objectManager = null;
-
-    public function __construct(private readonly DoctrineConfig $config) {}
+    public function __construct(DoctrineConfig $config, ?ObjectManagerLoader $objectManagerLoader = null)
+    {
+        $this->objectManagerLoader = $objectManagerLoader ?? new ObjectManagerLoader($config);
+    }
 
     /** @return list<string> */
     public function validate(string $dql): array
     {
-        $objectManager = $this->loadObjectManager();
+        $objectManager = $this->objectManagerLoader->load();
         if ($objectManager === null) {
             return [];
         }
@@ -37,30 +38,5 @@ final class ObjectManagerDqlValidator
         }
 
         return [];
-    }
-
-    private function loadObjectManager(): ?object
-    {
-        if ($this->loaded) {
-            return $this->objectManager;
-        }
-        $this->loaded = true;
-
-        $loader = $this->config->objectManagerLoader;
-        if ($loader === null) {
-            return null;
-        }
-
-        $path = str_starts_with($loader, '/') ? $loader : getcwd() . '/' . $loader;
-        if (!is_file($path)) {
-            return null;
-        }
-
-        $manager = require $path;
-        if (is_object($manager) && !method_exists($manager, 'createQuery') && method_exists($manager, 'getManager')) {
-            $manager = $manager->getManager();
-        }
-
-        return $this->objectManager = is_object($manager) ? $manager : null;
     }
 }

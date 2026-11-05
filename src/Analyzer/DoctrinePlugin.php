@@ -28,9 +28,12 @@ final class DoctrinePlugin implements Plugin
 {
     private readonly EntityMetadataRepository $metadata;
 
+    private readonly ObjectManagerLoader $objectManagerLoader;
+
     public function __construct(private readonly DoctrineConfig $config)
     {
-        $this->metadata = new EntityMetadataRepository($config);
+        $this->objectManagerLoader = new ObjectManagerLoader($config);
+        $this->metadata = new EntityMetadataRepository($config, $this->objectManagerLoader);
     }
 
     public function getDefinition(): PluginDefinition
@@ -57,7 +60,11 @@ final class DoctrinePlugin implements Plugin
         $registry->registerPropertyInitializationProvider(new EntityPropertyInitializationProvider($this->metadata));
         $registry->registerMethodAssertionProvider(new QueryBuilderStateAssertionProvider());
         $registry->registerBeforeAnalysisHook(new EntityAnalysisHook($this->metadata, $this->config));
-        $registry->registerMethodCallAnalysisHook(new DqlValidationHook($this->config, $this->metadata));
+        $registry->registerMethodCallAnalysisHook(new DqlValidationHook(
+            $this->config,
+            $this->metadata,
+            $this->objectManagerLoader,
+        ));
         $registry->registerMethodCallAnalysisHook(new RepositoryFieldsHook($this->metadata, $this->config));
         $registry->registerAfterFileAnalysisHook(new ProxyClassNameHook());
         if ($this->config->allCollectionsSelectable) {

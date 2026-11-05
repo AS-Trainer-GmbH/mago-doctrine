@@ -16,7 +16,7 @@
 | Doctrine ODM | `#[ODM\Document]`, `Field`, `Id`, `ReferenceOne/Many`, `EmbedOne/Many`, `DocumentRepository` |
 | Column type vs. property type (`allowNullablePropertyForRequiredField`) | `entity-column-type` |
 | Relation type vs. property type (to-one, to-many) | `entity-relation-type` |
-| Return types of `Query::getResult`, `getOneOrNullResult`, `getSingleResult`, `toIterable`, `execute` in `HYDRATE_OBJECT` mode | see *Query type inference* |
+| Return types of `Query::getResult`, `getOneOrNullResult`, `getSingleResult`, `toIterable`, `execute` in `HYDRATE_OBJECT` mode | see *Query type inference*; Doctrine's default hydration mode is `HYDRATE_OBJECT` |
 | `final` entity classes (allowed with native lazy objects) | `entity-not-final` (`reportFinalEntities`, `nativeLazyObjects`) |
 | `final` entity constructors | `entity-constructor-not-final` |
 | Mapping configuration errors | `entity-mapping` (missing repository / target entity classes) |
@@ -24,7 +24,7 @@
 | Throw types of `EntityManager::flush()` | `ORMException`, `UniqueConstraintViolationException` |
 | Dead code integration (generated ids, versions, read-only entities, Gedmo) | mapped properties count as read; ids, generated values, versions, read-only entities and Gedmo-managed properties count as written/initialised |
 | `Collection::first()` / `last()` narrowing after `isEmpty()` is `false` | `T\|false` becomes `T` (needs the `stubs` include) |
-| Custom types (`reportUnknownTypes`) | `types` mirrors Doctrine's `dbal.types` class registrations; `customTypes` can directly map type names to PHP types; unknown types use `entity-unknown-column-type` |
+| Custom types (`reportUnknownTypes`) | reads Symfony `doctrine.dbal.types` by default, with runtime DBAL map and explicit `types` / `customTypes` support; unknown types use `entity-unknown-column-type` |
 | Custom DQL functions | `customFunctions` option (name => return type) |
 | `reportDynamicQueryBuilders` | `dynamic-query-builder` |
 | `literalString` | `literal-string` for DQL/SQL arguments of `createQuery()` and `Doctrine\DBAL\Connection` query methods |
@@ -37,11 +37,12 @@ Issue codes are prefixed with `gimmickmedia/doctrine/`.
 $query = $entityManager->createQuery('SELECT u FROM Acme\User u');
 $query->getResult();                              // list<Acme\User>
 $query->getResult(Query::HYDRATE_OBJECT);         // list<Acme\User>
-$query->getOneOrNullResult();                     // mixed (hydration mode unknown)
+$query->getOneOrNullResult();                     // Acme\User|null
 $query->getOneOrNullResult(Query::HYDRATE_OBJECT); // Acme\User|null
+$query->getSingleResult();                        // Acme\User
 $query->getSingleResult(Query::HYDRATE_OBJECT);   // Acme\User
-$query->toIterable([], Query::HYDRATE_OBJECT);    // Traversable<int, Acme\User>
-$query->execute(null, Query::HYDRATE_OBJECT);     // list<Acme\User>
+$query->toIterable();                             // Traversable<int, Acme\User>
+$query->execute();                                // list<Acme\User>
 
 $entityManager->createQuery('SELECT u.id, u.email, COALESCE(u.name, \'Anonymous\') AS name FROM Acme\User u')
     ->getSingleResult(Query::HYDRATE_OBJECT);    // array{id: int, email: string, name: string}
@@ -70,10 +71,6 @@ require dirname(__DIR__) . '/vendor/autoload.php';
         allowNullablePropertyForRequiredField: false,
         ormRepositoryClass: 'Doctrine\\ORM\\EntityRepository',
         odmRepositoryClass: 'Doctrine\\ODM\\MongoDB\\Repository\\DocumentRepository',
-        types: [
-            'datetime_immutable' => 'Carbon\\Doctrine\\DateTimeImmutableType',
-            'datetime' => 'Carbon\\Doctrine\\DateTimeType',
-        ],
         customTypes: ['uuid' => Mago\Sdk\Analyzer\Type::namedObject('Symfony\\Component\\Uid\\Uuid')],
         customFunctions: ['FLOOR' => Mago\Sdk\Analyzer\Type::int()],
         reportUnknownTypes: false,
@@ -97,7 +94,7 @@ patches = ["vendor/gimmickmedia/mago-doctrine/patches/collections"]
 command = ["php", ".mago/extensions.php"]
 ```
 
-`entityNamespaces` accepts namespace prefixes; an empty list searches all classes for Doctrine mapping attributes. `types` follows Doctrine's `dbal.types` mapping and resolves a custom type from its `convertToPHPValue()` return type; built-in descriptors cover Symfony UID, Ramsey UUID and Carbon date types. `customTypes` remains available for direct DBAL-name-to-PHP-type mappings. The object manager loader follows the phpstan-doctrine convention (see its README for Symfony examples); it is loaded once per worker and only used for DQL validation.
+`entityNamespaces` accepts namespace prefixes; an empty list searches all classes for Doctrine mapping attributes. By default, the extension reads custom type registrations from `config/packages/doctrine.yaml` (`doctrine.dbal.types`), including scalar class names and `{ class: ... }` entries. Set `symfonyConfigPaths` to another list of config files, or to `[]` to disable YAML discovery; explicit `types` registrations override values read from YAML. When `objectManagerLoader` is configured, the extension also reads Doctrine's runtime `Type::getTypesMap()` after loading the manager, following phpstan-doctrine's descriptor lookup; custom types use their `convertToPHPValue()` return type when no built-in descriptor applies. Built-in descriptors cover Symfony UID, Ramsey UUID and Carbon date types. `customTypes` remains available for direct DBAL-name-to-PHP-type mappings. The object manager loader follows the phpstan-doctrine convention (see its README for Symfony examples); it is loaded once per worker and can also enable Doctrine's DQL parser.
 
 ## Development
 

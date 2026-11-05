@@ -14,6 +14,7 @@ final class DoctrineExtension
      * @param array<string, \Mago\Sdk\Analyzer\Type|string> $customTypes DBAL type names to inferred PHP types or Doctrine type classes
      * @param array<string, class-string> $types DBAL type names to Doctrine type classes
      * @param array<string, \Mago\Sdk\Analyzer\Type> $customFunctions DQL function names to inferred return types
+     * @param ?list<string> $symfonyConfigPaths Symfony Doctrine YAML config paths; null uses config/packages/doctrine.yaml
      */
     public static function create(
         array $entityNamespaces = [],
@@ -30,6 +31,7 @@ final class DoctrineExtension
         ?string $objectManagerLoader = null,
         bool $literalString = false,
         array $types = [],
+        ?array $symfonyConfigPaths = null,
     ): Extension {
         $config = new DoctrineConfig(
             entityNamespaces: $entityNamespaces,
@@ -46,6 +48,7 @@ final class DoctrineExtension
             objectManagerLoader: $objectManagerLoader,
             literalString: $literalString,
             types: $types,
+            symfonyConfigPaths: $symfonyConfigPaths,
         );
 
         return new Extension(

@@ -12,7 +12,7 @@ use Mago\Sdk\Analyzer\Type\NamedObjectType;
 
 /**
  * Types `getResult()`, `getOneOrNullResult()`, `getSingleResult()`, `toIterable()` and `execute()`
- * of `Doctrine\ORM\Query<TKey, TResult>` in `HYDRATE_OBJECT` mode.
+ * of `Doctrine\ORM\Query<TKey, TResult>` in `HYDRATE_OBJECT` mode, which is Doctrine's default.
  */
 final class QueryResultReturnTypeProvider implements MethodReturnTypeProvider
 {
@@ -46,9 +46,9 @@ final class QueryResultReturnTypeProvider implements MethodReturnTypeProvider
             default => null,
         };
 
-        // getResult() defaults to HYDRATE_OBJECT; the other methods use the query's (unknown) hydration mode.
+        // Doctrine's default query hydration mode is HYDRATE_OBJECT for every result method.
         $objectHydration = $hydration === null
-            ? $method === 'getresult'
+            ? true
             : $this->isObjectHydration($hydration->type, $hydration->expression ?? null);
         if (!$objectHydration) {
             return null;

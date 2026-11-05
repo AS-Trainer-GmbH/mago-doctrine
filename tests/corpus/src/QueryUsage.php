@@ -25,10 +25,20 @@ function dqlGetOneOrNullResult(EntityManagerInterface $manager): ?User
         ->getOneOrNullResult(Query::HYDRATE_OBJECT);
 }
 
+function dqlGetOneOrNullResultDefaultHydration(EntityManagerInterface $manager): ?User
+{
+    return $manager->createQuery('SELECT u FROM Corpus\\Entity\\User u')->getOneOrNullResult();
+}
+
 function dqlGetSingleResult(EntityManagerInterface $manager): User
 {
     return $manager->createQuery('SELECT u FROM Corpus\\Entity\\User u')
         ->getSingleResult(Query::HYDRATE_OBJECT);
+}
+
+function dqlGetSingleResultDefaultHydration(EntityManagerInterface $manager): User
+{
+    return $manager->createQuery('SELECT u FROM Corpus\\Entity\\User u')->getSingleResult();
 }
 
 /** @return iterable<User> */
@@ -38,11 +48,23 @@ function dqlToIterable(EntityManagerInterface $manager): iterable
         ->toIterable([], Query::HYDRATE_OBJECT);
 }
 
+/** @return iterable<User> */
+function dqlToIterableDefaultHydration(EntityManagerInterface $manager): iterable
+{
+    return $manager->createQuery('SELECT u FROM Corpus\\Entity\\User u')->toIterable();
+}
+
 /** @return list<User> */
 function dqlExecute(EntityManagerInterface $manager): array
 {
     return $manager->createQuery('SELECT u FROM Corpus\\Entity\\User u')
         ->execute(null, Query::HYDRATE_OBJECT);
+}
+
+/** @return list<User> */
+function dqlExecuteDefaultHydration(EntityManagerInterface $manager): array
+{
+    return $manager->createQuery('SELECT u FROM Corpus\\Entity\\User u')->execute();
 }
 
 /** @return list<array{id: int|null, email: string|null, name: string}> */

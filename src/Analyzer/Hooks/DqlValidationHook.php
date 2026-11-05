@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gimmickmedia\Mago\Doctrine\Analyzer\Hooks;
 
 use Gimmickmedia\Mago\Doctrine\Analyzer\CallSource;
+use Gimmickmedia\Mago\Doctrine\Analyzer\ObjectManagerLoader;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Dql\DqlValidator;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Dql\ObjectManagerDqlValidator;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Dql\QueryBuilderState;
@@ -36,9 +37,10 @@ final class DqlValidationHook implements MethodCallAnalysisHook
     public function __construct(
         private readonly DoctrineConfig $config,
         private readonly EntityMetadataRepository $metadata,
+        ?ObjectManagerLoader $objectManagerLoader = null,
     ) {
         $this->validator = new DqlValidator($metadata, $config);
-        $this->objectManagerValidator = new ObjectManagerDqlValidator($config);
+        $this->objectManagerValidator = new ObjectManagerDqlValidator($config, $objectManagerLoader);
     }
 
     /** @return non-empty-list<MethodTarget> */

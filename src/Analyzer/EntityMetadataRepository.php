@@ -35,6 +35,8 @@ final class EntityMetadataRepository
 
     private TypeDescriptorRegistry $typeDescriptors;
 
+    private readonly DbalTypeMapLoader $dbalTypeMap;
+
     /** @var array<string, EntityMetadata> */
     private array $entities = [];
 
@@ -43,13 +45,17 @@ final class EntityMetadataRepository
 
     /**
      */
-    public function __construct(private readonly DoctrineConfig $config)
-    {
+    public function __construct(
+        private readonly DoctrineConfig $config,
+        ?ObjectManagerLoader $objectManagerLoader = null,
+    ) {
         $this->entityNamespaces = array_values(array_filter(
             $config->entityNamespaces,
             static fn (string $namespace): bool => $namespace !== '',
         ));
         $this->values = new AttributeValueResolver();
+        $objectManagerLoader ??= new ObjectManagerLoader($config);
+        $this->dbalTypeMap = new DbalTypeMapLoader($config, $objectManagerLoader);
         $this->typeDescriptors = new TypeDescriptorRegistry($config->customTypes, $config->types);
     }
 
@@ -80,7 +86,7 @@ final class EntityMetadataRepository
 
         $this->loadedCodebase = $codebase;
         $this->values = new AttributeValueResolver($codebase);
-        $this->typeDescriptors = new TypeDescriptorRegistry($this->config->customTypes, $this->config->types);
+        $this->typeDescriptors = new TypeDescriptorRegistry($this->config->customTypes, $this->dbalTypeMap->load());
         $this->entities = [];
         $this->repositoryEntities = [];
 
