@@ -106,6 +106,7 @@ final class EntityMetadataRepository
         $propertyRequests = [];
         $classProperties = [];
         $mappedClasses = [];
+        $propertyRequestKeys = [];
         foreach ($classes as $className => $class) {
             $ormEntity = AttributeReader::find($class->attributes, self::ORM_MAPPING . 'Entity');
             $odmDocument = $this->findAttributeEndingWith($class->attributes, 'Document');
@@ -113,14 +114,38 @@ final class EntityMetadataRepository
                 continue;
             }
 
-            $propertyNames = [];
-            foreach ($class->properties as $propertyName) {
-                $propertyName = ltrim($propertyName, '$');
-                $propertyNames[] = $propertyName;
-                $propertyRequests[] = new MemberIdentifier($className, '$' . $propertyName);
+            $propertyOwners = [];
+            $declarations = [[$className, $class]];
+            foreach ($class->parentClasses as $parentClassName) {
+                $parentClass = $classes[$parentClassName] ?? $codebase->getClass($parentClassName);
+                if (
+                    $parentClass === null
+                    || (
+                        AttributeReader::find($parentClass->attributes, self::ORM_MAPPING . 'MappedSuperclass') === null
+                        && AttributeReader::find($parentClass->attributes, self::ORM_MAPPING . 'Entity') === null
+                    )
+                ) {
+                    continue;
+                }
+
+                $declarations[] = [$parentClassName, $parentClass];
             }
 
-            $classProperties[$className] = $propertyNames;
+            foreach ($declarations as [$declaringClassName, $declaration]) {
+                foreach ($declaration->properties as $propertyName) {
+                    $propertyName = ltrim($propertyName, '$');
+                    $propertyOwners[$propertyName] ??= $declaringClassName;
+                    $requestKey = strtolower($declaringClassName . "\0" . $propertyName);
+                    if (isset($propertyRequestKeys[$requestKey])) {
+                        continue;
+                    }
+
+                    $propertyRequestKeys[$requestKey] = true;
+                    $propertyRequests[] = new MemberIdentifier($declaringClassName, '$' . $propertyName);
+                }
+            }
+
+            $classProperties[$className] = $propertyOwners;
             $mappedClasses[$className] = ['orm' => $ormEntity !== null, 'attribute' => $ormEntity ?? $odmDocument];
         }
 
@@ -134,20 +159,20 @@ final class EntityMetadataRepository
             }
         }
 
-        foreach ($classProperties as $className => $propertyNames) {
+        foreach ($classProperties as $className => $propertyOwners) {
             $class = $classes[$className];
             $isOrm = $mappedClasses[$className]['orm'];
             $entityAttribute = $mappedClasses[$className]['attribute'];
             $customRepository = AttributeReader::stringArgument($entityAttribute, 0, 'repositoryClass');
             $repositoryClass = $customRepository ?? ($isOrm ? $this->config->ormRepositoryClass : $this->config->odmRepositoryClass);
             $mappedProperties = [];
-            foreach ($propertyNames as $propertyName) {
-                $property = $properties[$className][$propertyName] ?? null;
+            foreach ($propertyOwners as $propertyName => $declaringClassName) {
+                $property = $properties[$declaringClassName][$propertyName] ?? null;
                 if ($property === null) {
                     continue;
                 }
 
-                $mappedProperties[$propertyName] = $this->createPropertyMetadata($propertyName, $property);
+                $mappedProperties[$propertyName] = $this->createPropertyMetadata($propertyName, $property, $declaringClassName);
             }
 
             $entity = new EntityMetadata(
@@ -258,7 +283,11 @@ final class EntityMetadataRepository
         return strtolower(ltrim($name, '\\'));
     }
 
-    private function createPropertyMetadata(string $name, PropertyMetadata $property): DoctrinePropertyMetadata
+    private function createPropertyMetadata(
+        string $name,
+        PropertyMetadata $property,
+        string $declaringClass,
+    ): DoctrinePropertyMetadata
     {
         $attributes = $property->attributes;
         $column = AttributeReader::find($attributes, self::ORM_MAPPING . 'Column')
@@ -330,6 +359,7 @@ final class EntityMetadataRepository
             $property->location ?? $column?->location ?? $toOne?->location ?? $embedded?->location,
             $columnTypeClass,
             $columnPhpType,
+            $declaringClass,
         );
     }
 

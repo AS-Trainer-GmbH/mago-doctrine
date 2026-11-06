@@ -8,6 +8,7 @@ use Gimmickmedia\Mago\Doctrine\DoctrineConfig;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Hooks\CollectionMatchingIssueFilter;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Hooks\DqlValidationHook;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Hooks\EntityAnalysisHook;
+use Gimmickmedia\Mago\Doctrine\Analyzer\Hooks\EntityMappingReportHook;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Hooks\ProxyClassNameHook;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Hooks\RepositoryFieldsHook;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Providers\CollectionProvider;
@@ -59,7 +60,8 @@ final class DoctrinePlugin implements Plugin
         $registry->registerMethodThrowTypeProvider(new FlushThrowTypeProvider());
         $registry->registerPropertyInitializationProvider(new EntityPropertyInitializationProvider($this->metadata));
         $registry->registerMethodAssertionProvider(new QueryBuilderStateAssertionProvider());
-        $registry->registerBeforeAnalysisHook(new EntityAnalysisHook($this->metadata, $this->config));
+        $registry->registerBeforeAnalysisHook(new EntityAnalysisHook($this->metadata));
+        $registry->registerAfterFileAnalysisHook(new EntityMappingReportHook($this->metadata, $this->config));
         $registry->registerMethodCallAnalysisHook(new DqlValidationHook(
             $this->config,
             $this->metadata,

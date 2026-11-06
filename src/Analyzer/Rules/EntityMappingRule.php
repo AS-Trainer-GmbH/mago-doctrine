@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace Gimmickmedia\Mago\Doctrine\Analyzer\Rules;
 
 use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
-use Mago\Sdk\Analyzer\BeforeAnalysisContext;
+use Mago\Sdk\Analyzer\LifecycleContext;
 use Mago\Sdk\Reporting\Issue;
 use Mago\Sdk\Reporting\Level;
 
 final class EntityMappingRule
 {
-    public static function check(EntityMetadata $entity, BeforeAnalysisContext $context): void
+    public static function check(EntityMetadata $entity, LifecycleContext $context, string $file): void
     {
         $location = $entity->nameLocation ?? $entity->location;
         if (
             $location !== null
+            && FileLocationMatcher::matches($location, $file)
             && !str_starts_with($entity->repositoryClass, 'Doctrine\\')
             && !$context->codebase->classExists($entity->repositoryClass)
         ) {
@@ -32,6 +33,7 @@ final class EntityMappingRule
         foreach ($entity->properties as $property) {
             if (
                 $property->location === null
+                || !FileLocationMatcher::matches($property->location, $file)
                 || $property->targetEntity === null
                 || $context->codebase->classExists($property->targetEntity)
                 || $context->codebase->interfaceExists($property->targetEntity)

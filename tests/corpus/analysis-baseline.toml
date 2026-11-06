@@ -25,6 +25,11 @@ code = "gimmickmedia/doctrine/entity-unknown-column-type"
 start_line = 106
 end_line = 106
 
+[[entries."src/MappedEntities.php".issues]]
+code = "gimmickmedia/doctrine/entity-column-type"
+start_line = 26
+end_line = 26
+
 [[entries."src/QueryUsage.php".issues]]
 code = "gimmickmedia/doctrine/dql-validation"
 start_line = 135

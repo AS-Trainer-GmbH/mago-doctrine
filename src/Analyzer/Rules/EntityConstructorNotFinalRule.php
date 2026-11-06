@@ -5,16 +5,20 @@ declare(strict_types=1);
 namespace Gimmickmedia\Mago\Doctrine\Analyzer\Rules;
 
 use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
-use Mago\Sdk\Analyzer\BeforeAnalysisContext;
+use Mago\Sdk\Analyzer\LifecycleContext;
 use Mago\Sdk\Reporting\Issue;
 use Mago\Sdk\Reporting\Level;
 
 final class EntityConstructorNotFinalRule
 {
-    public static function check(EntityMetadata $entity, BeforeAnalysisContext $context): void
+    public static function check(EntityMetadata $entity, LifecycleContext $context, string $file): void
     {
         $constructor = $context->codebase->getDeclaringMethod($entity->className, '__construct');
-        if ($constructor === null || !$constructor->final) {
+        if (
+            $constructor === null
+            || !$constructor->final
+            || !FileLocationMatcher::matches($constructor->nameLocation ?? $constructor->location, $file)
+        ) {
             return;
         }
 

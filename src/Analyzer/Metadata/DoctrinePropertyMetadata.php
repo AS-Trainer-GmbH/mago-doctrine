@@ -25,5 +25,6 @@ final class DoctrinePropertyMetadata
         public readonly ?SourceLocation $location,
         public readonly ?string $columnTypeClass = null,
         public readonly ?Type $columnPhpType = null,
+        public readonly ?string $declaringClass = null,
     ) {}
 }

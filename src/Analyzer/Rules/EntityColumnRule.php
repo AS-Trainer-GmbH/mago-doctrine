@@ -8,19 +8,27 @@ use Gimmickmedia\Mago\Doctrine\Analyzer\DoctrineTypeMapper;
 use Gimmickmedia\Mago\Doctrine\Analyzer\Metadata\EntityMetadata;
 use Gimmickmedia\Mago\Doctrine\Analyzer\TypeDescriptorRegistry;
 use Gimmickmedia\Mago\Doctrine\DoctrineConfig;
-use Mago\Sdk\Analyzer\BeforeAnalysisContext;
+use Mago\Sdk\Analyzer\LifecycleContext;
 use Mago\Sdk\Analyzer\Type;
 use Mago\Sdk\Reporting\Issue;
 use Mago\Sdk\Reporting\Level;
 use Mago\Sdk\SourceLocation;
 
+use function in_array;
+use function strtolower;
+
 final class EntityColumnRule
 {
-    public static function check(EntityMetadata $entity, BeforeAnalysisContext $context, DoctrineConfig $config): void
+    public static function check(EntityMetadata $entity, LifecycleContext $context, DoctrineConfig $config, string $file): void
     {
         $typeDescriptors = new TypeDescriptorRegistry($config->customTypes, $config->types);
         foreach ($entity->properties as $property) {
-            if (!$property->mapped || $property->columnType === null || $property->location === null) {
+            if (
+                !$property->mapped
+                || $property->columnType === null
+                || $property->location === null
+                || !FileLocationMatcher::matches($property->location, $file)
+            ) {
                 continue;
             }
 
@@ -57,8 +65,11 @@ final class EntityColumnRule
 
             $expectedType = DoctrineTypeMapper::nullable($mappedType, $property->nullable);
             if (
-                (string) $expectedType !== (string) $property->nativeType
-                && !$context->types->isContainedBy($expectedType, $property->nativeType)
+                !in_array(strtolower($property->columnType), ['json', 'json_array'], true)
+                && (
+                    (string) $expectedType !== (string) $property->nativeType
+                    && !$context->types->isContainedBy($expectedType, $property->nativeType)
+                )
             ) {
                 self::report($context, $entity, $property->name, $property->columnType, (string) $property->nativeType, $property->location, 'is incompatible with');
 
@@ -77,7 +88,7 @@ final class EntityColumnRule
     }
 
     private static function report(
-        BeforeAnalysisContext $context,
+        LifecycleContext $context,
         EntityMetadata $entity,
         string $property,
         string $columnType,
